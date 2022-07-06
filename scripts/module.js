@@ -18,7 +18,6 @@ Hooks.once('ready', async function() {
 });
 
 Hooks.on("updateActor", (actor, change, options, userId) => {
-	console.log(actor, change)
 	if (change?.data?.attributes?.hp) {
 		const newHP = actor.data.data.attributes.hp.value + actor.data.data.attributes.hp.temp;
 		socket.emit('hp_update', change._id, newHP, actor.data.data.attributes.hp.max);

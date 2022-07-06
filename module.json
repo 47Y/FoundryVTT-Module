@@ -1,17 +1,16 @@
 {
-  "name": "module",
-  "title": "New Module",
+  "name": "sloth-overlay",
+  "title": "Sloth Overlay",
   "description": "",
-  "version": "This is auto replaced",
+  "version": "1.0",
   "library": "false",
   "manifestPlusVersion": "1.0.0",
   "minimumCoreVersion": "9",
   "compatibleCoreVersion": "9",
   "authors": [
     {
-      "name": "The League of Extraordinary FVTT Developers",
-      "url": "https://github.com/League-of-Foundry-Developers",
-      "discord": "discordID#0001"
+      "name": "47Y",
+      "discord": "47Y#0047"
     }
   ],
   "dependencies": [
@@ -22,19 +21,6 @@
   ],
   "esmodules": [
     "scripts/module.js"
-  ],
-  "scripts": [
-    "scripts/lib/lib.js"
-  ],
-  "styles": [
-    "styles/module.css"
-  ],
-  "languages": [
-    {
-      "lang": "en",
-      "name": "English",
-      "path": "languages/en.json"
-    }
   ],
   "url": "This is auto replaced",
   "manifest": "This is auto replaced",

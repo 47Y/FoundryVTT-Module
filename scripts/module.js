@@ -37,8 +37,10 @@ socket.on("connect_error", (err) => {
 
 socket.on('get_data', id => {
 	let actor = game.actors.get(id);
+	console.log(actor)
 	if (!actor) return;
 	let data = actor.data.data;
+	console.log(data)
 	socket.emit('hp_update', id, data.attributes.hp.value + data.attributes.hp.temp, data.attributes.hp.max);
 	socket.emit('ac_update', id, data.attributes.ac.value);
 	socket.emit('ability_update', id, data.abilities);

@@ -15,6 +15,22 @@ Hooks.once('init', async function() {
 Hooks.once('ready', async function() {
 	socket = io(game.settings.get('sloth-overlay', 'socket-link'));
 	socket.connect(() => {})
+	socket.on("connect_error", (err) => {
+		console.log(`connect_error due to ${err.message}`);
+	});
+	
+	socket.on('get_data', id => {
+		let actor = game.actors.get(id);
+		console.log(actor)
+		if (!actor) return;
+		let data = actor.data.data;
+		console.log(data)
+		socket.emit('hp_update', id, data.attributes.hp.value + data.attributes.hp.temp, data.attributes.hp.max);
+		socket.emit('ac_update', id, data.attributes.ac.value);
+		socket.emit('ability_update', id, data.abilities);
+		socket.emit('race_update', id, data.details.race);
+		socket.emit('class_update', id, actor.classes);
+	});
 });
 
 Hooks.on("updateActor", (actor, change, options, userId) => {
@@ -29,21 +45,4 @@ Hooks.on("updateActor", (actor, change, options, userId) => {
 	if (change?.data?.abilities) {
 		socket.emit('ability_update', change._id, change.data.abilities);
 	}
-});
-
-socket.on("connect_error", (err) => {
-	console.log(`connect_error due to ${err.message}`);
-});
-
-socket.on('get_data', id => {
-	let actor = game.actors.get(id);
-	console.log(actor)
-	if (!actor) return;
-	let data = actor.data.data;
-	console.log(data)
-	socket.emit('hp_update', id, data.attributes.hp.value + data.attributes.hp.temp, data.attributes.hp.max);
-	socket.emit('ac_update', id, data.attributes.ac.value);
-	socket.emit('ability_update', id, data.abilities);
-	socket.emit('race_update', id, data.details.race);
-	socket.emit('class_update', id, actor.classes);
 });

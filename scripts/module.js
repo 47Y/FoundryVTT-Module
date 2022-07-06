@@ -27,7 +27,11 @@ Hooks.once('ready', async function() {
 		socket.emit('ac_update', id, data.attributes.ac.value);
 		socket.emit('ability_update', id, data.abilities);
 		socket.emit('race_update', id, data.details.race);
-		socket.emit('class_update', id, actor.classes);
+		let classes = actor.classes;
+		Object.keys(classes).forEach(c => {
+			classes[c].data.subclass = actor.classes[c].data.subclass;
+		})
+		socket.emit('class_update', id, classes);
 	});
 });
 
@@ -36,7 +40,7 @@ Hooks.on("updateActor", (actor, change, options, userId) => {
 		const newHP = actor.data.data.attributes.hp.value + actor.data.data.attributes.hp.temp;
 		socket.emit('hp_update', change._id, newHP, actor.data.data.attributes.hp.max);
 	}
-	if (change?.data?.attributes?.ac) {
+	if (change?.data?.attributes?.ac || change?.data?.spells) {
 		const newAC = actor.data.data.attributes.ac.value;
 		socket.emit('ac_update', change._id, newAC);
 	}

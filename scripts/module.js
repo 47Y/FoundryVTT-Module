@@ -34,7 +34,7 @@ Hooks.once('ready', async function() {
 		socket.emit('class_update', id, classes);
 	});
 });
-
+z
 Hooks.on("updateActor", (actor, change, options, userId) => {
 	if (change?.data?.attributes?.hp) {
 		const newHP = actor.data.data.attributes.hp.value + actor.data.data.attributes.hp.temp;
@@ -47,4 +47,18 @@ Hooks.on("updateActor", (actor, change, options, userId) => {
 	if (change?.data?.abilities) {
 		socket.emit('ability_update', change._id, change.data.abilities);
 	}
+});
+
+Hooks.on("deleteActiveEffect", (effect, change) => {
+	let actor = effect.parent;
+	effect?.data?.changes.forEach(c => {
+		if (c.key == 'data.attributes.ac.calc') socket.emit('ac_update', actor.id, actor.data.data.attributes.ac.value);
+	});
+});
+
+Hooks.on("createActiveEffect", (effect, change) => {
+	let actor = effect.parent;
+	effect?.data?.changes.forEach(c => {
+		if (c.key == 'data.attributes.ac.calc') socket.emit('ac_update', actor.id, actor.data.data.attributes.ac.value);
+	});
 });

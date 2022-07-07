@@ -28,9 +28,9 @@ Hooks.once('ready', async function() {
 		socket.emit('ability_update', id, data.abilities);
 		socket.emit('race_update', id, data.details.race);
 		actor.effects.forEach(effect => {
-			if (effect.value.data.label == 'Mage Armor') socket.emit('ac_color', id, 3);
-			if (effect.value.data.label == 'Shield of Faith') socket.emit('ac_color', id, 2);
-			if (effect.value.data.label == 'Shield') socket.emit('ac_color', id, 1);
+			if (effect.data.label == 'Mage Armor') socket.emit('ac_color', id, 3);
+			if (effect.data.label == 'Shield of Faith') socket.emit('ac_color', id, 2);
+			if (effect.data.label == 'Shield') socket.emit('ac_color', id, 1);
 		})
 		let classes = actor.classes;
 		Object.keys(classes).forEach(c => {

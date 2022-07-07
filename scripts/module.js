@@ -54,9 +54,9 @@ Hooks.on("deleteActiveEffect", (effect, change) => {
 	effect?.data?.changes.forEach(c => {
 		if (c.key.startsWith('data.attributes.ac')) {
 			socket.emit('ac_update', actor.id, actor.data.data.attributes.ac.value);
-			if (effect._sourceName == 'Mage Armor') socket.emit('ac_color_remove', actor.id, 3);
-			if (effect._sourceName == 'Shield of Faith') socket.emit('ac_color_remove', actor.id, 2);
-			if (effect._sourceName == 'Shield') socket.emit('ac_color_remove', actor.id, 1);
+			if (effect.data.label == 'Mage Armor') socket.emit('ac_color_remove', actor.id, 3);
+			if (effect.data.label == 'Shield of Faith') socket.emit('ac_color_remove', actor.id, 2);
+			if (effect.data.label == 'Shield') socket.emit('ac_color_remove', actor.id, 1);
 		}
 	});
 });
@@ -66,9 +66,9 @@ Hooks.on("createActiveEffect", (effect, change) => {
 	effect?.data?.changes.forEach(c => {
 		if (c.key.startsWith('data.attributes.ac')) {
 			socket.emit('ac_update', actor.id, actor.data.data.attributes.ac.value);
-			if (effect._sourceName == 'Mage Armor') socket.emit('ac_color', actor.id, 3);
-			if (effect._sourceName == 'Shield of Faith') socket.emit('ac_color', actor.id, 2);
-			if (effect._sourceName == 'Shield') socket.emit('ac_color', actor.id, 1);
+			if (effect.data.label == 'Mage Armor') socket.emit('ac_color', actor.id, 3);
+			if (effect.data.label == 'Shield of Faith') socket.emit('ac_color', actor.id, 2);
+			if (effect.data.label == 'Shield') socket.emit('ac_color', actor.id, 1);
 		}
 	});
 });

@@ -52,7 +52,7 @@ Hooks.on("updateActor", (actor, change, options, userId) => {
 Hooks.on("deleteActiveEffect", (effect, change) => {
 	let actor = effect.parent;
 	effect?.data?.changes.forEach(c => {
-		if (c.key == 'data.attributes.ac.calc') {
+		if (c.key.startsWith('data.attributes.ac')) {
 			socket.emit('ac_update', actor.id, actor.data.data.attributes.ac.value);
 			if (c.value == 'mage') socket.emit('ac_color', actor.id, 'base');
 		}
@@ -62,7 +62,7 @@ Hooks.on("deleteActiveEffect", (effect, change) => {
 Hooks.on("createActiveEffect", (effect, change) => {
 	let actor = effect.parent;
 	effect?.data?.changes.forEach(c => {
-		if (c.key == 'data.attributes.ac.calc') {
+		if (c.key.startsWith('data.attributes.ac')) {
 			socket.emit('ac_update', actor.id, actor.data.data.attributes.ac.value);
 			if (c.value == 'mage') socket.emit('ac_color', actor.id, 'mage');
 		}
@@ -72,7 +72,7 @@ Hooks.on("createActiveEffect", (effect, change) => {
 Hooks.on("updateActiveEffect", (effect, change) => {
 	let actor = effect.parent;
 	effect?.data?.changes.forEach(c => {
-		if (c.key == 'data.attributes.ac.calc') {
+		if (c.key.startsWith('data.attributes.ac')) {
 			socket.emit('ac_update', actor.id, actor.data.data.attributes.ac.value);
 			if (c.value == 'mage') socket.emit('ac_color', actor.id, 'mage');
 		}

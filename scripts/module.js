@@ -34,7 +34,7 @@ Hooks.once('ready', async function() {
 		socket.emit('class_update', id, classes);
 	});
 });
-z
+
 Hooks.on("updateActor", (actor, change, options, userId) => {
 	if (change?.data?.attributes?.hp) {
 		const newHP = actor.data.data.attributes.hp.value + actor.data.data.attributes.hp.temp;

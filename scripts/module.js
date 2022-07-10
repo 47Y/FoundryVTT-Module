@@ -37,6 +37,7 @@ Hooks.once('ready', async function() {
 			classes[c].data.subclass = actor.classes[c].data.subclass;
 		})
 		socket.emit('class_update', id, classes);
+		socket.emit('mia_update', id, actor.getFlag('sloth-overlay', 'mia') || false);
 	});
 });
 
@@ -88,5 +89,5 @@ Hooks.on("updateActiveEffect", (effect, change) => {
 });
 
 Hooks.on("updateMIA", (actor, change) => {
-	socket.emit('update_mia', actor.id, change);
+	socket.emit('mia_update', actor.id, change);
 });

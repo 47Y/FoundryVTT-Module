@@ -54,7 +54,7 @@ Hooks.on("updateActor", (actor, change, options, userId) => {
 		socket.emit('ability_update', actor.id, change.data.abilities);
 	}
 	if (change?.img) socket.emit('image_update', actor.id, actor.img.split('/')[3]);
-	if (change?.data?.details?.race) socket.emit('race_update'. actor.id, change.data.details.race);
+	if (change?.data?.details?.race) socket.emit('race_update', actor.id, change.data.details.race);
 	if (change?.name) socket.emit('name_update'. actor.id, change.name);
 });
 

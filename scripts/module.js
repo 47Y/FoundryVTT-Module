@@ -48,20 +48,12 @@ Hooks.once('ready', async function() {
 Hooks.on("updateActor", (actor, change, options, userId) => {
 	if (change?.data?.attributes?.ac || change?.data?.spells) {
 		const newAC = actor.data.data.attributes.ac.value;
-		socket.emit('ac_update', change._id, newAC);
+		socket.emit('ac_update', actor.id, newAC);
 	}
 	if (change?.data?.abilities) {
-		socket.emit('ability_update', change._id, change.data.abilities);
+		socket.emit('ability_update', actor.id, change.data.abilities);
 	}
-
-	//TODO: There might be a more efficient way to do this...
-	let classLevels = 0;
-	let classes = actor?.classes;
-	Object.keys(classes).forEach(c => {
-		classLevels += c.data.data.levels
-		classes[c].data.subclass = actor.classes[c].data.subclass;
-	});
-	if (classLevels > 0) socket.emit('class_update', id, classes);
+	if (change?.img) socket.emite('image_update', actor.id, actor.img.split('/')[3]);
 });
 
 Hooks.on("deleteActiveEffect", (effect, change) => {

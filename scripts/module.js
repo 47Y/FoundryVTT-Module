@@ -53,7 +53,7 @@ Hooks.on("updateActor", (actor, change, options, userId) => {
 	if (change?.data?.abilities) {
 		socket.emit('ability_update', actor.id, change.data.abilities);
 	}
-	if (change?.img) socket.emite('image_update', actor.id, actor.img.split('/')[3]);
+	if (change?.img) socket.emit('image_update', actor.id, actor.img.split('/')[3]);
 });
 
 Hooks.on("deleteActiveEffect", (effect, change) => {

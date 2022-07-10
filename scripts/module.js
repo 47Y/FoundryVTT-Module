@@ -86,3 +86,7 @@ Hooks.on("updateActiveEffect", (effect, change) => {
 		}
 	});
 });
+
+Hooks.on("updateMIA", (actor, change) => {
+	socket.emit('update_mia', actor, change);
+});

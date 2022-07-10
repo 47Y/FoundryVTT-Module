@@ -23,10 +23,13 @@ Hooks.once('ready', async function() {
 		let actor = game.actors.get(id);
 		if (!actor) return;
 		let data = actor.data.data;
-		socket.emit('hp_update', id, data.attributes.hp.value + data.attributes.hp.temp, data.attributes.hp.max);
+
+		socket.emit('name_update', id, actor.data.name.startsWith('?') ? '???' : actor.data.name);
+		socket.emit('race_update', id, data.details.race);
+		socket.emit('image_update', id, actor.img.split('/')[3]);
+
 		socket.emit('ac_update', id, data.attributes.ac.value);
 		socket.emit('ability_update', id, data.abilities);
-		socket.emit('race_update', id, data.details.race);
 		actor.effects.forEach(effect => {
 			if (effect.data.label == 'Mage Armor') socket.emit('ac_color', id, 3);
 			if (effect.data.label == 'Shield of Faith') socket.emit('ac_color', id, 2);
@@ -34,18 +37,15 @@ Hooks.once('ready', async function() {
 		})
 		let classes = actor.classes;
 		Object.keys(classes).forEach(c => {
-			classes[c].data.subclass = actor.classes[c].data.subclass;
+			classes[c].data.subclass = actor.classes[c].data.subclass || '?';
 		})
 		socket.emit('class_update', id, classes);
 		socket.emit('mia_update', id, actor.getFlag('sloth-overlay', 'mia') || false);
+		
 	});
 });
 
 Hooks.on("updateActor", (actor, change, options, userId) => {
-	if (change?.data?.attributes?.hp) {
-		const newHP = actor.data.data.attributes.hp.value + actor.data.data.attributes.hp.temp;
-		socket.emit('hp_update', change._id, newHP, actor.data.data.attributes.hp.max);
-	}
 	if (change?.data?.attributes?.ac || change?.data?.spells) {
 		const newAC = actor.data.data.attributes.ac.value;
 		socket.emit('ac_update', change._id, newAC);
@@ -53,6 +53,15 @@ Hooks.on("updateActor", (actor, change, options, userId) => {
 	if (change?.data?.abilities) {
 		socket.emit('ability_update', change._id, change.data.abilities);
 	}
+
+	//TODO: There might be a more efficient way to do this...
+	let classLevels = 0;
+	let classes = actor?.classes;
+	Object.keys(classes).forEach(c => {
+		classLevels += c.data.data.levels
+		classes[c].data.subclass = actor.classes[c].data.subclass;
+	});
+	if (classLevels > 0) socket.emit('class_update', id, classes);
 });
 
 Hooks.on("deleteActiveEffect", (effect, change) => {
@@ -90,4 +99,32 @@ Hooks.on("updateActiveEffect", (effect, change) => {
 
 Hooks.on("updateMIA", (actor, change) => {
 	socket.emit('mia_update', actor.id, change);
+});
+
+
+
+
+
+
+
+
+
+Hooks.on('forien-unidentified-items:onIdentifyItem', (item, data) => {
+	let actor = item.parent;
+	switch (data.type) {
+		case 'class':
+		case 'subclass':
+			let classes = actor.classes;
+			let classLevels = 0;
+			Object.keys(actor).forEach(c => {
+				classes[c].data.subclass = actor.classes[c].data.subclass || '?';
+				classLevels += classes[c].data.levels;
+			});
+			if (classLevels < 9) classes['?'] = { data: { subclass: '?' } };
+			socket.emit('class_update', actor.id, classes);
+			break;
+		case 'feat':
+			if (data.img == 'assets/icons/pencil.png') socket.emit('name_update', actor.id, data.name);
+			break;
+	}
 });

@@ -55,7 +55,7 @@ Hooks.on("updateActor", (actor, change, options, userId) => {
 	}
 	if (change?.img) socket.emit('image_update', actor.id, actor.img.split('/')[3]);
 	if (change?.data?.details?.race) socket.emit('race_update', actor.id, change.data.details.race);
-	if (change?.name) socket.emit('name_update'. actor.id, change.name);
+	if (change?.name) socket.emit('name_update', actor.id, change.name);
 });
 
 Hooks.on("deleteActiveEffect", (effect, change) => {
@@ -97,6 +97,6 @@ Hooks.on("updateMIA", (actor, change) => {
 
 
 
-Hooks.on('updateClasses', (actor, classes, subclasses = {}) => {
+Hooks.on('updateClasses', (actor, classes, subclasses) => {
 	socket.emit('class_update', actor.id, classes, subclasses);
 });

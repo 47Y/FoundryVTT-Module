@@ -97,28 +97,10 @@ Hooks.on("updateMIA", (actor, change) => {
 
 
 
+Hooks.on('updateClasses', (actor, classes) => {
+	socket.emit('class_update', actor.id, classes);
+});
 
-
-
-
-
-
-Hooks.on('forien-unidentified-items:onIdentifyItem', (item, data) => {
-	let actor = item.parent;
-	switch (data.type) {
-		case 'class':
-		case 'subclass':
-			let classes = actor.classes;
-			let classLevels = 0;
-			Object.keys(actor).forEach(c => {
-				classes[c].data.subclass = actor.classes[c].data.subclass || '?';
-				classLevels += classes[c].data.levels;
-			});
-			if (classLevels < 9) classes['?'] = { data: { subclass: '?' } };
-			socket.emit('class_update', actor.id, classes);
-			break;
-		case 'feat':
-			if (data.img == 'assets/icons/pencil.png') socket.emit('name_update', actor.id, data.name);
-			break;
-	}
+Hooks.on('updateSubclasses', (actor, subclasses) => {
+	socket.emit('subclass_update', actor.id, subclasses);
 });

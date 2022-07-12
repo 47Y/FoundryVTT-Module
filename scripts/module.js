@@ -97,10 +97,6 @@ Hooks.on("updateMIA", (actor, change) => {
 
 
 
-Hooks.on('updateClasses', (actor, classes) => {
-	socket.emit('class_update', actor.id, classes);
-});
-
-Hooks.on('updateSubclasses', (actor, subclasses) => {
-	socket.emit('subclass_update', actor.id, subclasses);
+Hooks.on('updateClasses', (actor, classes, subclasses = {}) => {
+	socket.emit('class_update', actor.id, classes, subclasses);
 });

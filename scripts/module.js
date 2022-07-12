@@ -35,11 +35,7 @@ Hooks.once('ready', async function() {
 			if (effect.data.label == 'Shield of Faith') socket.emit('ac_color', id, 2);
 			if (effect.data.label == 'Shield') socket.emit('ac_color', id, 1);
 		})
-		let classes = actor.classes;
-		Object.keys(classes).forEach(c => {
-			classes[c].data.subclass = actor.classes[c].data.subclass || '?';
-		})
-		socket.emit('class_update', id, classes);
+		socket.emit('class_update', id, actor.getFlag('sloth-overlay', 'classes') || {}, actor.getFlag('sloth-overlay', 'subclasses') || {});
 		socket.emit('mia_update', id, actor.getFlag('sloth-overlay', 'mia') || false);
 		
 	});

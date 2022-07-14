@@ -5,9 +5,9 @@ Hooks.on('renderChatMessage', (message, html, data) => {
 			const hitFlag = getProperty(message.data.flags, "midi-qol.isHit");
 			const hitString = hitFlag === undefined ? "" : hitFlag ? 'hits' : "misses";
 			html.find(".midi-qol-attack-roll .dice-total").text(`${hitString}`);
-			html.find(".midi-qol-damage-roll").find(".dice-roll").replaceWith(`<span>DiceRolled</span>`);
-			html.find(".midi-qol-other-roll").find(".dice-roll").replaceWith(`<span>DiceRolled</span>`);
-			html.find(".midi-qol-bonus-roll").find(".dice-roll").replaceWith(`<span>DiceRolled</span>`);  
+			html.find(".midi-qol-damage-roll").find(".dice-roll").replaceWith(`<span>Dice Rolled</span>`);
+			html.find(".midi-qol-other-roll").find(".dice-roll").replaceWith(`<span>Dice Rolled</span>`);
+			html.find(".midi-qol-bonus-roll").find(".dice-roll").replaceWith(`<span>Dice Rolled</span>`);  
 		}
 	}
 });

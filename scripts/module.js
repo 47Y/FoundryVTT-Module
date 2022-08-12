@@ -37,7 +37,10 @@ Hooks.once('ready', async function() {
 		})
 		socket.emit('class_update', id, actor.getFlag('sloth-overlay', 'classes') || {}, actor.getFlag('sloth-overlay', 'subclasses') || {});
 		socket.emit('mia_update', id, actor.getFlag('sloth-overlay', 'mia') || false);
-		
+		let chatLog = new ChatLog().collection.contents;
+		for (let i = chatLog.length - 20; i < chatLog.length; i++) {
+			socket.emit('chat_message', chatLog[i], {});
+		}
 	});
 });
 
@@ -95,4 +98,19 @@ Hooks.on("updateMIA", (actor, change) => {
 
 Hooks.on('updateClasses', (actor, classes, subclasses) => {
 	socket.emit('class_update', actor.id, classes, subclasses);
+});
+
+Hooks.on('createChatMessage', (message, data, user) => {
+	if (game.user?.isGM) return;
+	if (socket) socket.emit('chat_message', message, data);
+});
+
+Hooks.on('updateChatMessage', (message, data, diff, user) => {
+	if (game.user?.isGM) return;
+	if (socket) socket.emit('update_chat_message', message, data);
+});
+
+Hooks.on('deleteChatMessage', (message, data, user) => {
+	if (game.user?.isGM) return;
+	if (socket) socket.emit('delete_chat_message', message.id);
 });

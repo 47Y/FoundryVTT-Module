@@ -5,8 +5,8 @@
   "version": "1.0",
   "library": "false",
   "manifestPlusVersion": "1.0.0",
-  "minimumCoreVersion": "9",
-  "compatibleCoreVersion": "9",
+  "minimumCoreVersion": "10",
+  "compatibleCoreVersion": "10",
   "authors": [
     {
       "name": "47Y",

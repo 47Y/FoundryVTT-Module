@@ -26,14 +26,26 @@ Hooks.once('ready', async function () {
 		socket.emit('hp_update', id, data.attributes.hp.value + data.attributes.hp.temp, data.attributes.hp.max);
 		socket.emit('ac_update', id, data.attributes.ac.value);
 		socket.emit('ability_update', id, data.abilities);
-		socket.emit('race_update', id, data.details.race); //TODO: Change to Ancestry/Heritage
-		socket.emit('class_update', id, data.class.name);
 		socket.emit('mia_update', id, actor.getFlag('sloth-overlay', 'mia') || false);
 		let chatLog = new ChatLog().collection.contents;
 		for (let i = chatLog.length - 20; i < chatLog.length; i++) {
 			socket.emit('chat_message', chatLog[i], {});
 		}
 	});
+});
+
+Hooks.on('updateActor', (actor, change, options, userId) => {
+	if (change?.data?.attributes?.hp) {
+		const newHP = actor.system.attributes.hp.value + actor.system.attributes.hp.temp;
+		socket.emit('hp_update', change._id, newHP, actor.system.attributes.hp.max);
+	}
+	if (change?.data?.attributes?.ac || change?.data?.spells) {
+		const newAC = actor.system.attributes.ac.value;
+		socket.emit('ac_update', change._id, newAC);
+	}
+	if (change?.data?.abilities) {
+		socket.emit('ability_update', change._id, change.data.abilities);
+	}
 });
 
 Hooks.on('updateMIA', (actor, change) => {

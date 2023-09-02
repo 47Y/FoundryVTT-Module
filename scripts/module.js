@@ -35,16 +35,16 @@ Hooks.once('ready', async function () {
 });
 
 Hooks.on('updateActor', (actor, change, options, userId) => {
-	if (change?.data?.attributes?.hp) {
+	if (change?.system?.attributes?.hp) {
 		const newHP = actor.system.attributes.hp.value + actor.system.attributes.hp.temp;
 		socket.emit('hp_update', change._id, newHP, actor.system.attributes.hp.max);
 	}
-	if (change?.data?.attributes?.ac || change?.data?.spells) {
+	if (change?.system?.attributes?.ac || change?.system?.spells) {
 		const newAC = actor.system.attributes.ac.value;
 		socket.emit('ac_update', change._id, newAC);
 	}
-	if (change?.data?.abilities) {
-		socket.emit('ability_update', change._id, change.data.abilities);
+	if (change?.system?.abilities) {
+		socket.emit('ability_update', change._id, change.system.abilities);
 	}
 });
 

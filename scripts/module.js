@@ -65,7 +65,7 @@ class TileShuffler {
 
 		// Get base locations using grid centers
 		const baseLocations = baseTiles.map(tile => {
-			const center = canvas.grid.getCenter(tile.x, tile.y);
+			const center = canvas.grid.getCenterPoint(tile.x, tile.y);
 			return [center.x, center.y];
 		});
 
@@ -90,7 +90,7 @@ class TileShuffler {
 				// Find closest base location using grid distance
 				let shortestDistance = Infinity;
 				let closestBase = baseLocations[0];
-				const tileCenter = canvas.grid.getCenter(tile.x, tile.y);
+				const tileCenter = canvas.grid.getCenterPoint(tile.x, tile.y);
 
 				for (const basePos of baseLocations) {
 					const distance = canvas.grid.measureDistance(
@@ -206,8 +206,8 @@ class TileShuffler {
 					// Check if tile is within one hex of any base tile
 					for (const baseTile of baseTileArray) {
 						// Use grid's built-in distance calculation
-						const baseCenter = canvas.grid.getCenter(baseTile.x, baseTile.y);
-						const tileCenter = canvas.grid.getCenter(tile.x, tile.y);
+						const baseCenter = canvas.grid.getCenterPoint(baseTile.x, baseTile.y);
+						const tileCenter = canvas.grid.getCenterPoint(tile.x, tile.y);
 						const hexes = canvas.grid.measureDistance(baseCenter, tileCenter);
 						
 						if (hexes <= 0.5) {

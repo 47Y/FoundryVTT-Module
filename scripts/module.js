@@ -157,7 +157,7 @@ class TileShuffler {
 				confirm: {
 					icon: '<i class="fas fa-check"></i>',
 					label: "Confirm",
-					callback: (html) => this.executeLockToggle(controlled[0], html.find('[name="includeOverhead"]').is(":checked"))
+					callback: (html) => this.executeLockToggle(controlled[0].document, html.find('[name="includeOverhead"]').is(":checked"))
 				},
 				cancel: {
 					icon: '<i class="fas fa-times"></i>',
@@ -171,9 +171,9 @@ class TileShuffler {
 	}
 
 	static async executeLockToggle(centerTile, includeOverhead) {
-		const size = centerTile.document.width;
-		const elevation = centerTile.document.elevation;
-		const isLocked = centerTile.document.locked;
+		const size = centerTile.width;
+		const elevation = centerTile.elevation;
+		const isLocked = centerTile.locked;
 		const hexSpacing = (size * Math.sqrt(3)) / 1.9;
 
 		// Pre-filter tiles by elevation for better performance
@@ -185,12 +185,12 @@ class TileShuffler {
 		}, new Map());
 
 		// Find tiles to lock/unlock
-		const tilesToUpdate = new Set([centerTile.document]);
+		const tilesToUpdate = new Set([centerTile]);
 
 		// Get tiles at same elevation
 		const baseTiles = tilesByElevation.get(elevation) || [];
 		baseTiles.forEach((tile) => {
-			if (canvas.grid.testAdjacency(centerTile.document, tile.document)) tilesToUpdate.add(tile);
+			if (canvas.grid.testAdjacency(centerTile, tile)) tilesToUpdate.add(tile);
 		});
 
 		// Handle overhead tiles if requested

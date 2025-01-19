@@ -129,7 +129,40 @@ class TileShuffler {
 			return;
 		}
 
-		const centerTile = controlled[0];
+		// Create dialog content
+		const content = `
+			<form>
+				<div class="form-group">
+					<label>Include overhead tiles?</label>
+					<div class="form-fields">
+						<input type="checkbox" name="includeOverhead" checked/>
+					</div>
+				</div>
+			</form>
+		`;
+
+		// Show dialog
+		const dialog = new Dialog({
+			title: "Lock Hex Group Options",
+			content: content,
+			buttons: {
+				confirm: {
+					icon: '<i class="fas fa-check"></i>',
+					label: "Confirm",
+					callback: (html) => this.executeLockToggle(controlled[0], html.find('[name="includeOverhead"]').is(":checked"))
+				},
+				cancel: {
+					icon: '<i class="fas fa-times"></i>',
+					label: "Cancel"
+				}
+			},
+			default: "confirm"
+		});
+		
+		dialog.render(true);
+	}
+
+	static async executeLockToggle(centerTile, includeOverhead) {
 		const size = centerTile.document.width;
 		const elevation = centerTile.document.elevation;
 		const isLocked = centerTile.document.locked;
@@ -151,22 +184,24 @@ class TileShuffler {
 		// Add base level tiles
 		nearbyTiles.forEach(tile => tilesToUpdate.add(tile));
 
-		// Find and add overlapping tiles at higher elevations
-		const allTiles = canvas.scene.tiles;
-		const baseTiles = [...tilesToUpdate];
+		// Find and add overlapping tiles at higher elevations if requested
+		if (includeOverhead) {
+			const allTiles = canvas.scene.tiles;
+			const baseTiles = [...tilesToUpdate];
 
-		baseTiles.forEach(baseTile => {
-			const overlappingTiles = allTiles.filter(t => {
-				if (t.elevation <= baseTile.elevation) return false;
+			baseTiles.forEach(baseTile => {
+				const overlappingTiles = allTiles.filter(t => {
+					if (t.elevation <= baseTile.elevation) return false;
+					
+					// Check if tiles overlap
+					const overlap = Math.hypot(t.x - baseTile.x, t.y - baseTile.y) < hexSpacing / 2;
+					
+					return overlap;
+				});
 				
-				// Check if tiles overlap
-				const overlap = Math.hypot(t.x - baseTile.x, t.y - baseTile.y) < hexSpacing / 2;
-				
-				return overlap;
+				overlappingTiles.forEach(tile => tilesToUpdate.add(tile));
 			});
-			
-			overlappingTiles.forEach(tile => tilesToUpdate.add(tile));
-		});
+		}
 
 		// Update all found tiles to locked/unlocked state
 		const updates = [...tilesToUpdate].map((tile) => ({

@@ -41,12 +41,10 @@ class TileShuffler {
 		const scene = canvas.scene;
 		if (!scene) return;
 
-		console.time("Total Shuffle Time");
 		const startTime = performance.now();
 		const totalTiles = scene.tiles.filter(t => !t.locked).length;
 
 		// Pre-sort tiles into elevation groups and filter locked tiles in one pass
-		console.time("Group Tiles by Elevation");
 		const tilesByElevation = scene.tiles.reduce((acc, tile) => {
 			if (tile.locked) return acc;
 			const elev = tile.elevation;
@@ -54,7 +52,6 @@ class TileShuffler {
 			acc.get(elev).push(tile);
 			return acc;
 		}, new Map());
-		console.timeEnd("Group Tiles by Elevation");
 
 		const changes = [];
 
@@ -63,21 +60,16 @@ class TileShuffler {
 		if (!baseTiles.length) return; // Exit early if no base tiles
 
 		// Create base locations array and spatial index in one pass
-		console.time("Create Base Tile Index");
 		const baseLocations = baseTiles.map((tile) => [tile.x, tile.y]);
 		const baseTileGrid = new Map(baseTiles.map((tile) => [`${tile.x},${tile.y}`, tile]));
-		console.timeEnd("Create Base Tile Index");
 
 		// Fisher-Yates shuffle
-		console.time("Shuffle Locations");
 		for (let i = baseLocations.length - 1; i > 0; i--) {
 			const j = Math.floor(Math.random() * (i + 1));
 			[baseLocations[i], baseLocations[j]] = [baseLocations[j], baseLocations[i]];
 		}
-		console.timeEnd("Shuffle Locations");
 
 		// Update base tiles
-		console.time("Process Base Tiles");
 		changes.push(
 			...baseTiles.map((tile, index) => ({
 				_id: tile.id,
@@ -85,10 +77,8 @@ class TileShuffler {
 				y: baseLocations[index][1]
 			}))
 		);
-		console.timeEnd("Process Base Tiles");
 
 		// Handle overhead tiles by elevation level
-		console.time("Process Overhead Tiles");
 		for (const [elev, tilesAtElev] of tilesByElevation) {
 			if (elev === 0) continue;
 
@@ -109,13 +99,9 @@ class TileShuffler {
 				})
 			);
 		}
-		console.timeEnd("Process Overhead Tiles");
 
-		console.time("Update Documents");
 		await scene.updateEmbeddedDocuments("Tile", changes);
-		console.timeEnd("Update Documents");
 
-		console.timeEnd("Total Shuffle Time");
 		const endTime = performance.now();
 		const totalTime = endTime - startTime;
 		const avgTimePerTile = totalTime / totalTiles;

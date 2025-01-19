@@ -2,7 +2,7 @@
 	"id": "tile-shuffler",
 	"title": "Tile Shuffler",
 	"description": "A module that allows you to randomly shuffle map tiles in your scene.",
-	"version": "1.0.5",
+	"version": "1.0.6",
 	"library": false,
 	"compatibility": {
 		"minimum": 12,

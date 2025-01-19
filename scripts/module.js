@@ -41,6 +41,9 @@ class TileShuffler {
 		const scene = canvas.scene;
 		if (!scene) return;
 
+		console.time("Tile Shuffle");
+		const startTime = performance.now();
+
 		// Pre-sort tiles into elevation groups and filter locked tiles in one pass
 		const tilesByElevation = scene.tiles.reduce((acc, tile) => {
 			if (tile.locked) return acc;
@@ -50,15 +53,21 @@ class TileShuffler {
 			return acc;
 		}, new Map());
 
+		// Count total tiles being processed
+		const totalTiles = Array.from(tilesByElevation.values()).reduce((sum, tiles) => sum + tiles.length, 0);
+		if (totalTiles === 0) return;
+
 		const changes = [];
 		
 		// Get and handle base tiles (elevation 0)
 		const baseTiles = tilesByElevation.get(0) || [];
-		if (!baseTiles.length) return; // Exit early if no base tiles
+		if (!baseTiles.length) return;
 
-		// Create base locations array and spatial index in one pass
-		const baseLocations = baseTiles.map(tile => [tile.x, tile.y]);
-		const baseTileGrid = new Map(baseTiles.map(tile => [`${tile.x},${tile.y}`, tile]));
+		// Get base locations using grid centers
+		const baseLocations = baseTiles.map(tile => {
+			const center = canvas.grid.getCenter(tile.x, tile.y);
+			return [center.x, center.y];
+		});
 
 		// Fisher-Yates shuffle
 		for (let i = baseLocations.length - 1; i > 0; i--) {
@@ -77,45 +86,48 @@ class TileShuffler {
 		for (const [elev, tilesAtElev] of tilesByElevation) {
 			if (elev === 0) continue;
 
-			// Process all tiles at this elevation in one map operation
 			changes.push(...tilesAtElev.map(tile => {
-				// Find closest base tile using grid coordinates
-				const [closestBasePos, offset] = this.findClosestBaseAndOffset(tile, baseTileGrid);
-				
+				// Find closest base location using grid distance
+				let shortestDistance = Infinity;
+				let closestBase = baseLocations[0];
+				const tileCenter = canvas.grid.getCenter(tile.x, tile.y);
+
+				for (const basePos of baseLocations) {
+					const distance = canvas.grid.measureDistance(
+						{ x: basePos[0], y: basePos[1] },
+						tileCenter
+					);
+					if (distance < shortestDistance) {
+						shortestDistance = distance;
+						closestBase = basePos;
+					}
+				}
+
+				// Calculate offset from closest base
+				const offset = [tile.x - closestBase[0], tile.y - closestBase[1]];
+
 				// Pick random new base location
-				const [baseX, baseY] = baseLocations[Math.floor(Math.random() * baseLocations.length)];
-				
+				const newBase = baseLocations[Math.floor(Math.random() * baseLocations.length)];
+
 				return {
 					_id: tile.id,
-					x: baseX + offset[0],
-					y: baseY + offset[1]
+					x: newBase[0] + offset[0],
+					y: newBase[1] + offset[1]
 				};
 			}));
 		}
 
 		await scene.updateEmbeddedDocuments("Tile", changes);
-	}
 
-	// Helper function to find closest base tile and offset
-	static findClosestBaseAndOffset(tile, baseTileGrid) {
-		let shortestDistance = Infinity;
-		let closestBasePos = null;
+		const endTime = performance.now();
+		const totalTime = endTime - startTime;
+		const timePerTile = totalTime / totalTiles;
 
-		for (const pos of baseTileGrid.keys()) {
-			const [baseX, baseY] = pos.split(',').map(Number);
-			const distance = Math.hypot(tile.x - baseX, tile.y - baseY);
-			if (distance < shortestDistance) {
-				shortestDistance = distance;
-				closestBasePos = [baseX, baseY];
-			}
-		}
-
-		const offset = closestBasePos ? [
-			tile.x - closestBasePos[0],
-			tile.y - closestBasePos[1]
-		] : [0, 0];
-
-		return [closestBasePos, offset];
+		console.timeEnd("Tile Shuffle");
+		console.log(
+			`Shuffled ${totalTiles} tiles in ${totalTime.toFixed(2)}ms ` +
+			`(${timePerTile.toFixed(2)}ms per tile)`
+		);
 	}
 
 	static async toggleLockSelectedHexGroup() {
@@ -154,15 +166,13 @@ class TileShuffler {
 			},
 			default: "confirm"
 		});
-		
+
 		dialog.render(true);
 	}
 
 	static async executeLockToggle(centerTile, includeOverhead) {
-		const size = centerTile.document.width;
 		const elevation = centerTile.document.elevation;
 		const isLocked = centerTile.document.locked;
-		const hexSpacing = (size * Math.sqrt(3)) / 1.9;
 
 		// Pre-filter tiles by elevation for better performance
 		const tilesByElevation = canvas.scene.tiles.reduce((acc, t) => {
@@ -174,11 +184,12 @@ class TileShuffler {
 
 		// Find tiles to lock/unlock
 		const tilesToUpdate = new Set([centerTile.document]);
-		
-		// Get tiles at same elevation
+
+		// Get tiles at same elevation using grid's adjacency test
 		const baseTiles = tilesByElevation.get(elevation) || [];
-		baseTiles.forEach(tile => {
-			if (Math.hypot(centerTile.x - tile.x, centerTile.y - tile.y) < hexSpacing) {
+		baseTiles.forEach((tile) => {
+			// Use built-in hex grid adjacency test
+			if (canvas.grid.testAdjacency(centerTile.document, tile.document)) {
 				tilesToUpdate.add(tile);
 			}
 		});
@@ -186,21 +197,22 @@ class TileShuffler {
 		// Handle overhead tiles if requested
 		if (includeOverhead) {
 			const baseTileArray = [...tilesToUpdate];
-			const basePositions = new Map(
-				baseTileArray.map(tile => [`${tile.x},${tile.y}`, tile])
-			);
-
+			
 			// Process each elevation level above the base
 			for (const [elev, tiles] of tilesByElevation) {
 				if (elev <= elevation) continue;
-				
-				tiles.forEach(tile => {
-					// Check against all base positions at once
-					for (const [pos] of basePositions) {
-						const [baseX, baseY] = pos.split(',').map(Number);
-						if (Math.hypot(tile.x - baseX, tile.y - baseY) < hexSpacing / 2) {
+
+				tiles.forEach((tile) => {
+					// Check if tile is within one hex of any base tile
+					for (const baseTile of baseTileArray) {
+						// Use grid's built-in distance calculation
+						const baseCenter = canvas.grid.getCenter(baseTile.x, baseTile.y);
+						const tileCenter = canvas.grid.getCenter(tile.x, tile.y);
+						const hexes = canvas.grid.measureDistance(baseCenter, tileCenter);
+						
+						if (hexes <= 0.5) {
 							tilesToUpdate.add(tile);
-							break; // Exit once we find a match
+							break;
 						}
 					}
 				});
@@ -208,13 +220,13 @@ class TileShuffler {
 		}
 
 		// Create and apply updates
-		const updates = [...tilesToUpdate].map(tile => ({
+		const updates = [...tilesToUpdate].map((tile) => ({
 			_id: tile.id,
 			locked: !isLocked
 		}));
 
 		await canvas.scene.updateEmbeddedDocuments("Tile", updates);
-		ui.notifications.info(`${isLocked ? 'Unlocked' : 'Locked'} ${updates.length} tiles in hex group.`);
+		ui.notifications.info(`${isLocked ? "Unlocked" : "Locked"} ${updates.length} tiles in hex group.`);
 	}
 }
 

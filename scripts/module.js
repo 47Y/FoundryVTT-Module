@@ -162,45 +162,53 @@ class TileShuffler {
 		const size = centerTile.document.width;
 		const elevation = centerTile.document.elevation;
 		const isLocked = centerTile.document.locked;
-
-		// Get all tiles at same elevation
-		const tilesAtElevation = canvas.scene.tiles.filter((t) => t.elevation === elevation);
-
-		// Calculate circle distance of size*√3/2 (hex grid spacing)
 		const hexSpacing = (size * Math.sqrt(3)) / 2;
+
+		// Pre-filter tiles by elevation for better performance
+		const tilesByElevation = canvas.scene.tiles.reduce((acc, t) => {
+			const elev = t.elevation;
+			if (!acc.has(elev)) acc.set(elev, []);
+			acc.get(elev).push(t);
+			return acc;
+		}, new Map());
 
 		// Find tiles to lock/unlock
 		const tilesToUpdate = new Set([centerTile.document]);
-
-		const nearbyTiles = tilesAtElevation.filter((t) => {
-			const distance = Math.hypot(centerTile.x - t.x, centerTile.y - t.y);
-			return distance < hexSpacing;
+		
+		// Get tiles at same elevation
+		const baseTiles = tilesByElevation.get(elevation) || [];
+		baseTiles.forEach(tile => {
+			if (Math.hypot(centerTile.x - tile.x, centerTile.y - tile.y) < hexSpacing) {
+				tilesToUpdate.add(tile);
+			}
 		});
 
-		// Add base level tiles
-		nearbyTiles.forEach(tile => tilesToUpdate.add(tile));
-
-		// Find and add overlapping tiles at higher elevations if requested
+		// Handle overhead tiles if requested
 		if (includeOverhead) {
-			const allTiles = canvas.scene.tiles;
-			const baseTiles = [...tilesToUpdate];
+			const baseTileArray = [...tilesToUpdate];
+			const basePositions = new Map(
+				baseTileArray.map(tile => [`${tile.x},${tile.y}`, tile])
+			);
 
-			baseTiles.forEach(baseTile => {
-				const overlappingTiles = allTiles.filter(t => {
-					if (t.elevation <= baseTile.elevation) return false;
-					
-					// Check if tiles overlap
-					const overlap = Math.hypot(t.x - baseTile.x, t.y - baseTile.y) < hexSpacing / 2;
-					
-					return overlap;
-				});
+			// Process each elevation level above the base
+			for (const [elev, tiles] of tilesByElevation) {
+				if (elev <= elevation) continue;
 				
-				overlappingTiles.forEach(tile => tilesToUpdate.add(tile));
-			});
+				tiles.forEach(tile => {
+					// Check against all base positions at once
+					for (const [pos] of basePositions) {
+						const [baseX, baseY] = pos.split(',').map(Number);
+						if (Math.hypot(tile.x - baseX, tile.y - baseY) < hexSpacing / 2) {
+							tilesToUpdate.add(tile);
+							break; // Exit once we find a match
+						}
+					}
+				});
+			}
 		}
 
-		// Update all found tiles to locked/unlocked state
-		const updates = [...tilesToUpdate].map((tile) => ({
+		// Create and apply updates
+		const updates = [...tilesToUpdate].map(tile => ({
 			_id: tile.id,
 			locked: !isLocked
 		}));

@@ -41,88 +41,81 @@ class TileShuffler {
 		const scene = canvas.scene;
 		if (!scene) return;
 
-		const baseTiles = [];
-		const baseLocations = [];
-		const overheadTiles = [];
+		// Pre-sort tiles into elevation groups and filter locked tiles in one pass
+		const tilesByElevation = scene.tiles.reduce((acc, tile) => {
+			if (tile.locked) return acc;
+			const elev = tile.elevation;
+			if (!acc.has(elev)) acc.set(elev, []);
+			acc.get(elev).push(tile);
+			return acc;
+		}, new Map());
+
 		const changes = [];
-		const allTiles = scene.tiles;
+		
+		// Get and handle base tiles (elevation 0)
+		const baseTiles = tilesByElevation.get(0) || [];
+		if (!baseTiles.length) return; // Exit early if no base tiles
 
-		// Store all unlocked tiles and their locations
-		const tileMap = new Map(); // For quick tile lookups
-		allTiles.forEach((tile) => {
-			if (tile.locked) return;
-			if (tile.elevation > 0) {
-				let underTile = tileMap.get(this.getClosestTileId(tile, allTiles));
-				if (underTile) {
-					let offset = [tile.x - underTile.x, tile.y - underTile.y];
-					overheadTiles.push({ tile, offset });
-				}
-				return;
-			}
-			baseLocations.push([tile.x, tile.y]);
-			baseTiles.push(tile);
-			tileMap.set(tile.id, tile);
-		});
+		// Create base locations array and spatial index in one pass
+		const baseLocations = baseTiles.map(tile => [tile.x, tile.y]);
+		const baseTileGrid = new Map(baseTiles.map(tile => [`${tile.x},${tile.y}`, tile]));
 
-		// Fisher-Yates shuffle for base locations
+		// Fisher-Yates shuffle
 		for (let i = baseLocations.length - 1; i > 0; i--) {
 			const j = Math.floor(Math.random() * (i + 1));
 			[baseLocations[i], baseLocations[j]] = [baseLocations[j], baseLocations[i]];
 		}
 
-		// First update base tiles
-		const baseUpdates = baseTiles.map((tile, index) => ({
+		// Update base tiles
+		changes.push(...baseTiles.map((tile, index) => ({
 			_id: tile.id,
 			x: baseLocations[index][0],
 			y: baseLocations[index][1]
-		}));
+		})));
 
-		// Randomly assign overhead tiles to new base positions
-		const overheadUpdates = overheadTiles.map(({ tile, offset }) => {
-			const randomBaseIndex = Math.floor(Math.random() * baseUpdates.length);
-			const newBase = baseUpdates[randomBaseIndex];
-			return {
-				_id: tile.id,
-				x: newBase.x + offset[0],
-				y: newBase.y + offset[1]
-			};
-		});
+		// Handle overhead tiles by elevation level
+		for (const [elev, tilesAtElev] of tilesByElevation) {
+			if (elev === 0) continue;
 
-		// Combine all updates
-		changes.push(...baseUpdates, ...overheadUpdates);
+			// Process all tiles at this elevation in one map operation
+			changes.push(...tilesAtElev.map(tile => {
+				// Find closest base tile using grid coordinates
+				const [closestBasePos, offset] = this.findClosestBaseAndOffset(tile, baseTileGrid);
+				
+				// Pick random new base location
+				const [baseX, baseY] = baseLocations[Math.floor(Math.random() * baseLocations.length)];
+				
+				return {
+					_id: tile.id,
+					x: baseX + offset[0],
+					y: baseY + offset[1]
+				};
+			}));
+		}
 
 		await scene.updateEmbeddedDocuments("Tile", changes);
 	}
 
-	static getClosestTileId(tile, allTiles) {
+	// Helper function to find closest base tile and offset
+	static findClosestBaseAndOffset(tile, baseTileGrid) {
 		let shortestDistance = Infinity;
-		let closestTileId = null;
+		let closestBasePos = null;
 
-		for (const otherTile of allTiles) {
-			if (tile === otherTile || otherTile.elevation > 0) continue;
-			const distance = Math.hypot(tile.x - otherTile.x, tile.y - otherTile.y);
+		for (const pos of baseTileGrid.keys()) {
+			const [baseX, baseY] = pos.split(',').map(Number);
+			const distance = Math.hypot(tile.x - baseX, tile.y - baseY);
 			if (distance < shortestDistance) {
 				shortestDistance = distance;
-				closestTileId = otherTile.id;
+				closestBasePos = [baseX, baseY];
 			}
 		}
-		return closestTileId;
-	}
 
-	static getTileUnderneath(tile) {
-		let shortestDistance = Infinity;
-		let closestTile = null;
-		const allTiles = canvas.scene.tiles;
+		const offset = closestBasePos ? [
+			tile.x - closestBasePos[0],
+			tile.y - closestBasePos[1]
+		] : [0, 0];
 
-		allTiles.forEach((otherTile) => {
-			if (tile === otherTile) return;
-			const distance = Math.hypot(tile.x - otherTile.x, tile.y - otherTile.y);
-			if (distance < shortestDistance) {
-				shortestDistance = distance;
-				closestTile = otherTile;
-			}
-		});
-		return closestTile;
+		return [closestBasePos, offset];
 	}
 
 	static async toggleLockSelectedHexGroup() {

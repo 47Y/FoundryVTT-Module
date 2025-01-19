@@ -4,7 +4,6 @@
 	"description": "A module that allows you to randomly shuffle map tiles in your scene.",
 	"version": "1.0.0",
 	"library": false,
-	"manifestPlusVersion": "1.2.0",
 	"compatibility": {
 		"minimum": 12,
 		"verified": 12,

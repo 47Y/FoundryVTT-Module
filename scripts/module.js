@@ -41,8 +41,8 @@ class TileShuffler {
 		const scene = canvas.scene;
 		if (!scene) return;
 
-		const tiles = [];
-		const locations = [];
+		const baseTiles = [];
+		const baseLocations = [];
 		const overheadTiles = [];
 		const changes = [];
 		const allTiles = scene.tiles;
@@ -59,34 +59,37 @@ class TileShuffler {
 				}
 				return;
 			}
-			locations.push([tile.x, tile.y]);
-			tiles.push(tile);
+			baseLocations.push([tile.x, tile.y]);
+			baseTiles.push(tile);
 			tileMap.set(tile.id, tile);
 		});
 
-		// Fisher-Yates shuffle for locations
-		for (let i = locations.length - 1; i > 0; i--) {
+		// Fisher-Yates shuffle for base locations
+		for (let i = baseLocations.length - 1; i > 0; i--) {
 			const j = Math.floor(Math.random() * (i + 1));
-			[locations[i], locations[j]] = [locations[j], locations[i]];
+			[baseLocations[i], baseLocations[j]] = [baseLocations[j], baseLocations[i]];
 		}
 
-		// Prepare all changes at once
-		changes.push(
-			...overheadTiles.map((overheadTile, index) => ({
-				_id: overheadTile.tile.id,
-				x: locations[index][0] + overheadTile.offset[0],
-				y: locations[index][1] + overheadTile.offset[1]
-			}))
-		);
+		// First update base tiles
+		const baseUpdates = baseTiles.map((tile, index) => ({
+			_id: tile.id,
+			x: baseLocations[index][0],
+			y: baseLocations[index][1]
+		}));
 
-		// Add regular tile changes
-		changes.push(
-			...tiles.map((tile, index) => ({
+		// Randomly assign overhead tiles to new base positions
+		const overheadUpdates = overheadTiles.map(({ tile, offset }) => {
+			const randomBaseIndex = Math.floor(Math.random() * baseUpdates.length);
+			const newBase = baseUpdates[randomBaseIndex];
+			return {
 				_id: tile.id,
-				x: locations[index + overheadTiles.length][0],
-				y: locations[index + overheadTiles.length][1]
-			}))
-		);
+				x: newBase.x + offset[0],
+				y: newBase.y + offset[1]
+			};
+		});
+
+		// Combine all updates
+		changes.push(...baseUpdates, ...overheadUpdates);
 
 		await scene.updateEmbeddedDocuments("Tile", changes);
 	}

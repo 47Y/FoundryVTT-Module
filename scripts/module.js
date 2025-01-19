@@ -162,7 +162,7 @@ class TileShuffler {
 		const size = centerTile.document.width;
 		const elevation = centerTile.document.elevation;
 		const isLocked = centerTile.document.locked;
-		const hexSpacing = (size * Math.sqrt(3)) / 2;
+		const hexSpacing = (size * Math.sqrt(3)) / 1.9;
 
 		// Pre-filter tiles by elevation for better performance
 		const tilesByElevation = canvas.scene.tiles.reduce((acc, t) => {

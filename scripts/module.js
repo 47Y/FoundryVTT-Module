@@ -25,7 +25,6 @@ class TileShuffler {
                 button: true,
                 onClick: () => this.shuffleTiles()
             });
-            game.controls.render();
         }
     }
 
@@ -40,48 +39,58 @@ class TileShuffler {
         const allTiles = scene.tiles;
 
         // Store all unlocked tiles and their locations
+        const tileMap = new Map(); // For quick tile lookups
         allTiles.forEach(tile => {
             if (tile.locked) return;
             if (tile.elevation > 0) {
-                let underTile = this.getTileUnderneath(tile);
-                let offset = [tile.x - underTile.x, tile.y - underTile.y];
-                overheadTiles.push({tile, offset});
+                let underTile = tileMap.get(this.getClosestTileId(tile, allTiles));
+                if (underTile) {
+                    let offset = [tile.x - underTile.x, tile.y - underTile.y];
+                    overheadTiles.push({tile, offset});
+                }
                 return;
             }
             locations.push([tile.x, tile.y]);
             tiles.push(tile);
+            tileMap.set(tile.id, tile);
         });
 
-        // Handle overhead tiles first
-        while (overheadTiles.length > 0) {
-            const randomLocationIndex = Math.floor(Math.random() * locations.length);
-            const randomLocation = locations[randomLocationIndex];
-            let overheadTile = overheadTiles.pop();
-            changes.push({
-                _id: overheadTile.tile.id, 
-                x: randomLocation[0] + overheadTile.offset[0], 
-                y: randomLocation[1] + overheadTile.offset[1]
-            });
+        // Fisher-Yates shuffle for locations
+        for (let i = locations.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [locations[i], locations[j]] = [locations[j], locations[i]];
         }
 
-        // Handle regular tiles
-        while (tiles.length > 0) {
-            const randomTileIndex = Math.floor(Math.random() * tiles.length);
-            const randomLocationIndex = Math.floor(Math.random() * locations.length);
-            const randomTile = tiles[randomTileIndex];
-            const randomLocation = locations[randomLocationIndex];
+        // Prepare all changes at once
+        changes.push(...overheadTiles.map((overheadTile, index) => ({
+            _id: overheadTile.tile.id,
+            x: locations[index][0] + overheadTile.offset[0],
+            y: locations[index][1] + overheadTile.offset[1]
+        })));
 
-            changes.push({
-                _id: randomTile.id, 
-                x: randomLocation[0], 
-                y: randomLocation[1]
-            });
-
-            tiles.splice(randomTileIndex, 1);
-            locations.splice(randomLocationIndex, 1);
-        }
+        // Add regular tile changes
+        changes.push(...tiles.map((tile, index) => ({
+            _id: tile.id,
+            x: locations[index + overheadTiles.length][0],
+            y: locations[index + overheadTiles.length][1]
+        })));
 
         await scene.updateEmbeddedDocuments('Tile', changes);
+    }
+
+    static getClosestTileId(tile, allTiles) {
+        let shortestDistance = Infinity;
+        let closestTileId = null;
+        
+        for (const otherTile of allTiles) {
+            if (tile === otherTile || otherTile.elevation > 0) continue;
+            const distance = Math.hypot(tile.x - otherTile.x, tile.y - otherTile.y);
+            if (distance < shortestDistance) {
+                shortestDistance = distance;
+                closestTileId = otherTile.id;
+            }
+        }
+        return closestTileId;
     }
 
     static getTileUnderneath(tile) {

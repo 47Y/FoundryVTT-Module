@@ -16,8 +16,7 @@ class TileShuffler {
         }
     }
 
-    static addSceneControls() {
-        const tileControls = game.controls.controls.find(c => c.name === "tiles");
+    static addSceneControls(tileControls) {
         if (tileControls) {
             tileControls.tools.push({
                 name: "shuffle",
@@ -108,4 +107,10 @@ Hooks.once('init', () => {
 
 Hooks.once('ready', () => {
     TileShuffler.ready();
+});
+
+Hooks.on('getSceneControlButtons', (controls) => {
+    if (!game.user.isGM) return;
+    const tileControls = controls.find(c => c.name === "tiles");
+    if (tileControls) TileShuffler.addSceneControls(tileControls);
 });

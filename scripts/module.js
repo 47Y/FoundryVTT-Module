@@ -25,6 +25,15 @@ class TileShuffler {
                 button: true,
                 onClick: () => this.shuffleTiles()
             });
+            
+            // Add new lock hex group button
+            tileControls.tools.push({
+                name: "lockHexGroup",
+                title: "Lock Hex Group",
+                icon: "fas fa-lock",
+                button: true,
+                onClick: () => this.lockSelectedHexGroup()
+            });
         }
     }
 
@@ -107,6 +116,63 @@ class TileShuffler {
             }
         });
         return closestTile;
+    }
+
+    static async lockSelectedHexGroup() {
+        const controlled = canvas.tiles.controlled;
+        if (controlled.length !== 1) {
+            ui.notifications.warn("Please select exactly one tile to lock as a hex group.");
+            return;
+        }
+
+        const centerTile = controlled[0];
+        const size = centerTile.width; // Assuming hexes are regular (width = height)
+        const elevation = centerTile.elevation;
+        
+        // Get all tiles at same elevation
+        const tilesAtElevation = canvas.scene.tiles.filter(t => t.elevation === elevation);
+        
+        // Calculate hex centers at distance of size*√3/2 (hex grid spacing)
+        const hexSpacing = size * Math.sqrt(3) / 2;
+        const adjacentPositions = [
+            [0, -size],           // North
+            [hexSpacing, -size/2], // Northeast
+            [hexSpacing, size/2],  // Southeast
+            [0, size],            // South
+            [-hexSpacing, size/2], // Southwest
+            [-hexSpacing, -size/2] // Northwest
+        ];
+
+        // Find tiles to lock
+        const tilesToLock = [centerTile];
+        const centerX = centerTile.x + size/2;
+        const centerY = centerTile.y + size/2;
+
+        for (const [offsetX, offsetY] of adjacentPositions) {
+            const targetX = centerX + offsetX;
+            const targetY = centerY + offsetY;
+            
+            // Find the closest tile to each hex position
+            const nearbyTile = tilesAtElevation.find(t => {
+                const tileCenter = {
+                    x: t.x + t.width/2,
+                    y: t.y + t.height/2
+                };
+                const distance = Math.hypot(tileCenter.x - targetX, tileCenter.y - targetY);
+                return distance < size/3; // Tolerance for slight misalignment
+            });
+
+            if (nearbyTile) tilesToLock.push(nearbyTile);
+        }
+
+        // Update all found tiles to locked state
+        const updates = tilesToLock.map(tile => ({
+            _id: tile.id,
+            locked: true
+        }));
+
+        await canvas.scene.updateEmbeddedDocuments('Tile', updates);
+        ui.notifications.info(`Locked ${updates.length} tiles in hex group.`);
     }
 }
 
